@@ -1,0 +1,84 @@
+import aiohttp
+import asyncio
+import argparse
+import pymorphy2
+from enum import Enum
+from dataclasses import dataclass
+from anyio import create_task_group
+from adapters.inosmi_ru import sanitize
+from text_tools import calculate_jaundice_rate, split_by_words
+
+SAMPLE_ARTICLES = [
+    "https://inosmi.ru/20240908/otpusk-270028360.html",
+    "https://inosmi.ru/20240908/mvf-270028927.html",
+    "https://inosmi.ru/20240908/pomidory-269986456.html",
+    "https://inosmi.ru/20240907/mariytsy-270025800.html",
+]
+
+
+class Status(Enum):
+    OK = 1
+    FETCH_ERROR = 2
+
+
+@dataclass
+class ParseResult:
+    url: str
+    status: Status
+    title: str
+    score: float
+    words_count: int
+
+    def __str__(self):
+        return f"URL: {self.url}\n"
+
+
+async def fetch(session, url):
+    async with session.get(url) as response:
+        response.raise_for_status()
+        return await response.text()
+
+
+def get_words_from_file(filename: str) -> set[str]:
+    with open(filename) as f:
+        return set(f.read().split())
+
+
+async def process_article(session, morph, charged_words, url, title, results: list[ParseResult]):
+    text = await fetch(session, url)
+    santized_text = sanitize(text, plaintext=True)
+    words = split_by_words(morph, santized_text)
+    score = calculate_jaundice_rate(words, charged_words)
+
+    results.append(
+        ParseResult(
+            url=url,
+            status=Status.OK,
+            title=title,
+            score=score,
+            words_count=len(words),
+        )
+    )
+
+
+async def main():
+    parser = argparse.ArgumentParser()
+    # parser.add_argument('url', type=str)
+    args = parser.parse_args()
+    words = get_words_from_file(
+        "dicts/positive_words.txt") | get_words_from_file("dicts/negative_words.txt")
+
+    morph = pymorphy2.MorphAnalyzer()
+
+    results = []
+    async with aiohttp.ClientSession() as session:
+        async with create_task_group() as tg:
+            for url in SAMPLE_ARTICLES:
+                tg.start_soon(process_article, session,
+                              morph, words, url, '', results)
+
+    for result in results:
+        print(result)
+
+
+asyncio.run(main())
