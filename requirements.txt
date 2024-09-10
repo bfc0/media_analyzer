@@ -7,3 +7,4 @@ pymorphy2-dicts==2.*
 DAWG-Python==0.7.*
 pytest==8.3.2
 chardet==5.2.0
+async-timeout==4.0.3
