@@ -88,7 +88,7 @@ async def process_article(
 
             with Timer() as timer:
                 santized_text = context.sanitize(text, plaintext=True)
-                words = split_by_words(context.morph, santized_text)
+                words = await split_by_words(context.morph, santized_text)
                 score = calculate_jaundice_rate(words, context.charged_words)
 
                 result = ArticleParseResult(
