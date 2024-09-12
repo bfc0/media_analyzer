@@ -30,7 +30,7 @@ class Status(Enum):
 
 
 @dataclass
-class ParseResult:
+class ArticleParseResult:
     url: str
     status: Status
     score: float | None = None
@@ -76,7 +76,7 @@ def get_words_from_file(filename: str) -> set[str]:
 
 async def process_article(
         url: str,
-        results: list[ParseResult],
+        results: list[ArticleParseResult],
         session: aiohttp.ClientSession,
         context: ProcessArticleContext,
 ) -> None:
@@ -91,7 +91,7 @@ async def process_article(
                 words = split_by_words(context.morph, santized_text)
                 score = calculate_jaundice_rate(words, context.charged_words)
 
-                result = ParseResult(
+                result = ArticleParseResult(
                     url=url,
                     status=Status.OK,
                     score=score,
@@ -100,13 +100,13 @@ async def process_article(
                 )
 
         except aiohttp.ClientError:
-            result = ParseResult(url=url, status=Status.FETCH_ERROR)
+            result = ArticleParseResult(url=url, status=Status.FETCH_ERROR)
 
         except adapters.exceptions.ArticleNotFound:
-            result = ParseResult(url=url, status=Status.PARSE_ERROR)
+            result = ArticleParseResult(url=url, status=Status.PARSE_ERROR)
 
         except asyncio.CancelledError:
-            result = ParseResult(url=url, status=Status.TIMED_OUT)
+            result = ArticleParseResult(url=url, status=Status.TIMED_OUT)
 
         finally:
             results.append(result)

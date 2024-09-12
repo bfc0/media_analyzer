@@ -30,7 +30,8 @@ async def handle(request, context: ProcessArticleContext, limit=MAX_ARTICLES):
 
     return web.json_response([stat.asdict() for stat in stats])
 
-if __name__ == '__main__':
+
+def main():
     words = get_words_from_file("dicts/positive_words.txt") \
         | get_words_from_file("dicts/negative_words.txt")
 
@@ -45,3 +46,7 @@ if __name__ == '__main__':
     app.add_routes(
         [web.get('/', lambda request: handle(request, context=context))])
     web.run_app(app)
+
+
+if __name__ == '__main__':
+    main()

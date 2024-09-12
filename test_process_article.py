@@ -4,7 +4,7 @@ import pytest
 import pymorphy2
 from copy import copy
 from adapters.exceptions import ArticleNotFound
-from process_article import ProcessArticleContext, ParseResult, Status, process_article
+from process_article import ProcessArticleContext, ArticleParseResult, Status, process_article
 
 
 @pytest.fixture
@@ -38,7 +38,8 @@ async def test_process_article_with_fetch_error(session):
     ctx.fetch = fetch_throws
     results = []
     await process_article("url", results, session, ctx)
-    assert results == [ParseResult(url="url", status=Status.FETCH_ERROR)]
+    assert results == [ArticleParseResult(
+        url="url", status=Status.FETCH_ERROR)]
 
 
 async def test_process_article_with_parse_error(session):
@@ -49,7 +50,8 @@ async def test_process_article_with_parse_error(session):
     ctx.sanitize = sanitize_throws
     results = []
     await process_article("url", results, session, ctx)
-    assert results == [ParseResult(url="url", status=Status.PARSE_ERROR)]
+    assert results == [ArticleParseResult(
+        url="url", status=Status.PARSE_ERROR)]
 
 
 async def test_process_article_with_timeout(session):
@@ -60,14 +62,14 @@ async def test_process_article_with_timeout(session):
     ctx.fetch = fetch_times_out
     results = []
     await process_article("url", results, session, ctx)
-    assert results == [ParseResult(url="url", status=Status.TIMED_OUT)]
+    assert results == [ArticleParseResult(url="url", status=Status.TIMED_OUT)]
 
 
 async def test_process_article_with_100_score(session):
     ctx = copy(base_context)
     results = []
     await process_article("url", results, session, ctx)
-    assert results[0].without("elapsed") == ParseResult(
+    assert results[0].without("elapsed") == ArticleParseResult(
         url='url', status=Status.OK, score=100.0, words_count=4
     )
 
@@ -80,6 +82,6 @@ async def test_process_article_with_50_score(session):
     ctx.fetch = fetch_half
     results = []
     await process_article("url", results, session, ctx)
-    assert results[0].without("elapsed") == ParseResult(
+    assert results[0].without("elapsed") == ArticleParseResult(
         url='url', status=Status.OK, score=50.0, words_count=8
     )
